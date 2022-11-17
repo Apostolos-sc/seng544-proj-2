@@ -56,6 +56,7 @@ def connect_to_endpoint(url, headers, params, next_token = None):
         raise Exception(response.status_code, response.text)
     return response.json()
 
+# API Key, don't share outside of the project group :P
 os.environ['TOKEN'] = 'AAAAAAAAAAAAAAAAAAAAADpGjQEAAAAAWpuJTRYNDlh4pJqPyl4O%2Bpgmi2k%3Do9d8PxiI9kipYMQJhEx9mghexfTGyYq0c5Zwr9KJ1wUjiPnpmS'
 
 #Inputs for the request
@@ -64,14 +65,19 @@ headers = create_headers(bearer_token)
 keyword = "lang:en city"
 start_time = "2021-03-01T00:00:00.000Z"
 end_time = "2021-03-31T00:00:00.000Z"
-max_results = 10
+max_results = 100
 
 url = create_url(keyword, start_time,end_time, max_results)
 json_response = connect_to_endpoint(url[0], headers, url[1])
 print(json.dumps(json_response, indent=4))
 
-# Go to: https://twitter.com/anyuser/status/[tweet id] to find a specific tweet by id
+# Export data to csv files in same dir
 df = pd.DataFrame(json_response['data'])
 df.to_csv('data.csv')
 df = pd.DataFrame(json_response['includes'])
 df.to_csv('includes.csv')
+
+# Go to: https://twitter.com/anyuser/status/[tweet id] to find a specific tweet by id
+
+# Tweets by user id:
+# https://developer.twitter.com/en/docs/twitter-api/tweets/timelines/api-reference/get-users-id-tweets
