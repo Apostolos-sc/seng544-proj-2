@@ -34,21 +34,27 @@ print("BERT layers made.")
 
 # Neural network layers
 l = tf.keras.layers.Dropout(0.1, name="dropout")(outputs['pooled_output'])
+# The dropout layer randomly sets inputs to 0 with a frequency of rate (0.1) at each step during training
 l = tf.keras.layers.Dense(1, activation='sigmoid', name="output")(l)
+# The dense layer implements the operation: output = activation(dot(input, kernel) + bias)
+#   activation = the element-wise activation function
+#   kernel = weights matrix created by the layer
+#   bias = bias vector created by the layer
 print("NN layers made.")
 
 # Use inputs and outputs to construct final model
-model = tf.keras.Model(inputs=[text_input], outputs=[l])
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(X_train, Y_train, epochs=2, batch_size=32)
+model = tf.keras.Model(inputs=[text_input], outputs=[l]) # Groups layers into a model object
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']) # Configures the model for training
+model.fit(X_train, Y_train, epochs=2, batch_size=32) # Trains the model for a fixed number of epochs (iterations)
 print("Model made.")
 
-Y_predict = model.predict(X_test)
-Y_predict = Y_predict.flatten()
+#Y_predict = model.predict(X_test) # Return predicted class for each input
+#Y_predict = Y_predict.flatten()
+print(model.evaluate(x=X_test, y=Y_test))
 print("Y_predict: ")
-print(Y_predict)
+#print(Y_predict)
 print("Y_test: ")
-print(Y_test)
+#print(Y_test)
 
-out = pd.DataFrame(Y_predict).to_csv("predict.csv")
-out = pd.DataFrame(Y_test).to_csv("test.csv")
+#out = pd.DataFrame(Y_predict).to_csv("predict.csv")
+#out = pd.DataFrame(Y_test).to_csv("test.csv")
