@@ -3,6 +3,9 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow_hub as hub
 import tensorflow_text as text
+import nltk
+from nltk.corpus import stopwords
+set(stopwords.word('english'))
 
 df = pd.read_csv("collated.csv")
 
@@ -18,13 +21,13 @@ preprocess_text = bert_preprocess(text_input)
 outputs = bert_encoder(preprocess_text)
 print("BERT layers made.")
 
-l =tf.keras.layers.Dropout(0.1, name='dropout')(outputs['pooled_output'])
+l =tf.keras.layers.Dropout(0.3, name='dropout')(outputs['pooled_output'])
 l = tf.keras.layers.Dense(1, activation='sigmoid', name="output")(l)
 print("NN layers made.")
 
 model = tf.keras.Model(inputs=[text_input], outputs=[l])
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(X_train, Y_train, epochs=2, batch_size=32)
+model.fit(X_train, Y_train, epochs=7, batch_size=16)
 print("Model made.")
 
 Y_predict = model.predict(X_test)

@@ -1,6 +1,6 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
@@ -14,7 +14,7 @@ X = vectorizer.fit_transform(corpus) # Bag-of-words vectorization
 #print(X.toarray())
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=0)
-gnb = GaussianNB()
+gnb = MultinomialNB()
 gnb.fit(X_train.toarray(), Y_train)
 print("Bag-of-words score: " + str(gnb.score(X_test.toarray(), Y_test)))
 
@@ -23,6 +23,6 @@ X = vectorizer.fit_transform(corpus)
 #print(X.toarray())
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=0)
-gnb = GaussianNB()
+gnb = MultinomialNB()
 gnb.fit(X_train.toarray(), Y_train)
 print("TF-IDF score: " + str(gnb.score(X_test.toarray(), Y_test)))
