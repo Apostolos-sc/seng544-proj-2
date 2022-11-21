@@ -6,7 +6,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 import pandas as pd
 
-df = pd.read_csv("collated.csv")
+df = pd.read_csv("../Data/collated.csv")
 Y = df['class']
 
 corpus = df['text']

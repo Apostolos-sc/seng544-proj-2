@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import tensorflow_text as text
 
-df = pd.read_csv("collated.csv")
+df = pd.read_csv("../Data/collated.csv")
 
 X_train, X_test, Y_train, Y_test = train_test_split(df['text'], df['class'], stratify=df['class'], random_state=0)
 
