@@ -66,20 +66,24 @@ os.environ['TOKEN'] = 'AAAAAAAAAAAAAAAAAAAAADpGjQEAAAAA3Do%2Ft8nLNUMYrs%2FKlGFs0
 #Inputs for the request
 bearer_token = auth()
 headers = create_headers(bearer_token)
-keyword = "lang:en island"
 start_time = "2021-03-01T00:00:00.000Z"
 end_time = "2021-03-31T00:00:00.000Z"
 max_results = 100
 
-url = create_url(keyword, start_time,end_time, max_results)
+# !!! Change these each search !!!
+keyword = "lang:en vote"
+file_number = 30
+
+# Create the query
+url = create_url(keyword, start_time, end_time, max_results)
 json_response = connect_to_endpoint(url[0], headers, url[1])
 print(json.dumps(json_response, indent=4))
 
-# Export data to csv files in same dir
+# Export data to csv files
 df = pd.DataFrame(json_response['data'])
-df.to_csv('data.csv', mode='a', index=False, header=False)
+df.to_csv('./Users/data' + str(file_number) + '.csv', mode='w', index=False, header=False)
 df = pd.DataFrame(json_response['includes'])
-df.to_csv('includes.csv', mode='a', index=False, header=False)
+df.to_csv('./Users/includes' + str(file_number) + '.csv', mode='w', index=False, header=False)
 
 # Go to: https://twitter.com/anyuser/status/[tweet id] to find a specific tweet by id
 
