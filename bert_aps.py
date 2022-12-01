@@ -36,6 +36,9 @@ for i, v in enumerate(df["country"].value_counts()):
              fontweight='bold')
 plt.show()
 
+##########################
+### Text Preprocessing ###
+##########################
 
 #remove rt from begining of sentence - do first cause RT is capitalized.
 df["text"] = df["text"].map(lambda name: re.sub('^(RT)', ' ', name))
@@ -44,8 +47,6 @@ df["text"] = df["text"].map(lambda name: re.sub(r'http\S+', ' ', name))
 #removing mentions
 df["text"] = df["text"].map(lambda name: re.sub("@([a-zA-Z0-9_]{1,50})", '', name))
 
-text = re.sub('^(RT)', ' ', df["text"][0])
-print(text)
 #remove repeated instances of characters
 #removing repeating characters
 repeat_pattern = re.compile(r'(\w)\1*') #compile the pattern we are looking for
@@ -83,11 +84,15 @@ df["text"] = df["text"].map(lambda name: ' '.join([word for word in name.split()
 df["text"] = df["text"].map(lambda name: re.sub('[\']', ' ', name))
 #final white space clean up
 df["text"] = df["text"].map(lambda name: " ".join(name.split(' ')))
-df.to_csv("testing.csv", sep='\t', encoding='utf-8')
 #still need to check for strings that contain whitespaces only and remove them
-df = df.drop(df[df["text"].map(len) < 0])
-print("printing 210999")
-print(df.head(31))
+df["text"] = df["text"].map(lambda text: np.nan if len(text) == 0 else text)
+df.dropna(axis=0, inplace=True)
+df.to_csv("testing.csv", sep='\t', encoding='utf-8')
+
+##############################
+### End Text Preprocessing ###
+##############################
+
 #map countries to integers
 #create dictionary
 country_dict = dict()
