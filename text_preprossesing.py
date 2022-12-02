@@ -7,7 +7,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import Counter
 import nltk
-from tensorflow.python.client import device_lib
 import re
 import numpy as np
 #nltk.download('stopwords')
