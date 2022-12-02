@@ -2,19 +2,25 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import tensorflow_hub as hub
+import tensorflow_text as text
 from sklearn.model_selection import train_test_split
 import re
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import Counter
 import nltk
-nltk.download('stopwords')
+import seaborn as sns
+from sklearn.metrics.pairwise import cosine_similarity
+#nltk.download('stopwords')
+# for Colab users: !pip install tensorflow_text
+from tensorflow.python.client import device_lib
 stop_words = stopwords.words('english')
 stopwords_dict = Counter(stop_words)
 
 
 df = pd.read_csv('data.csv')
-df.head()
+#df.head()
 
 plt.style.use('ggplot')
 
@@ -99,7 +105,7 @@ country_dict = dict()
 countries = df["country"].unique()
 for i in range(0, num_classes):
     country_dict[countries[i]] = i
-print(country_dict)
+#print(country_dict)
 df["Labels"] = df["country"].map(country_dict)
 
 #drop country, we are interested in the label only.
@@ -107,18 +113,15 @@ df = df.drop(["country"], axis=1)
 
 
 
-y = tf.keras.utils.to_categorical(df["Labels"].values, num_classes=num_classes)
-X_train, X_test, y_train, y_test = train_test_split(df['text'], y, test_size=0.1, random_state=0)
-X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.15, random_state=0)
+y = tf.keras.utils.to_categorical(df["Labels"][:10000].values, num_classes=num_classes)
+X_train, X_test, y_train, y_test = train_test_split(df["text"][:10000], y, test_size=0.2, random_state=0)
+X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.10, random_state=0)
 
-# for Colab users: !pip install tensorflow_text
-import tensorflow_hub as hub
-import tensorflow_text as text
-
-#preprocessor = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-preprocess/2")
-#encoder = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-base/1")
-preprocessor = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3")
-encoder = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/4")
+print(X_test)
+preprocessor = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-preprocess/2")
+encoder = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-base/1")
+#preprocessor = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3")
+#encoder = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/4")
 
 def get_embeddings(sentences):
   '''return BERT-like embeddings of input text
@@ -131,11 +134,10 @@ def get_embeddings(sentences):
   return encoder(preprocessed_text)['pooled_output']
 
 
-print(get_embeddings(["testing life forces in mind"]))
+#print(get_embeddings(["testing life forces in mind"]))
 
 #printing semantic textual similarity
-import seaborn as sns
-from sklearn.metrics.pairwise import cosine_similarity
+
 
 
 def plot_similarity(features, labels):
@@ -208,7 +210,7 @@ def balanced_f1_score(y_true, y_pred):
 i = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
 x = preprocessor(i)
 x = encoder(x)
-x = tf.keras.layers.Dropout(0.2, name="dropout")(x['pooled_output'])
+x = tf.keras.layers.Dropout(0.5, name="dropout")(x['pooled_output'])
 x = tf.keras.layers.Dense(num_classes, activation='softmax', name="output")(x)
 
 model = tf.keras.Model(i, x)
@@ -216,7 +218,7 @@ model = tf.keras.Model(i, x)
 #if our model doesn't improve for 3 epochs -> patience = 3 we stop the training
 #we restore the weights from the epoch where the validation loss showed the best value
 
-n_epochs = 20
+n_epochs = 1
 #Definition of function that will be used to calculate metrics
 def balanced_recall(y_true, y_pred):
     #This function calculates the balanced recall metric
@@ -287,9 +289,13 @@ def predict_class(reviews):
   Output:
     - class (list of int)
   '''
-  return [np.argmax(pred) for pred in model_fit.predict(reviews)]
-#model.save("text_classifier_v1")
+  return [np.argmax(pred) for pred in model.predict(reviews)]
+
+score = model.evaluate(X_test, y_test, verbose=0)
+print("Test loss:", score[0])
+print("Test accuracy:", score[1])
 y_pred = predict_class(X_test)
+y_pred = tf.keras.utils.to_categorical(y_pred, num_classes=num_classes)
 print(classification_report(y_test, y_pred))
 from tensorflow import keras
 # load model
@@ -308,4 +314,7 @@ for i in range(0, num_metrics):
     ax[i].set_title(metric_list[i].replace("_", " "),fontsize=20)
     ax[i].legend(loc="lower left")
 plt.show()
-
+model.save("text_classifier_v1")
+##########################################################
+####### Still need to successfully save/load mode ########
+##########################################################
