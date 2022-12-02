@@ -4,13 +4,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-#import tensorflow as tf
-#from keras.utils import to_categorical
 import pandas as pd
 import nltk
 
 # ---------- Import data and convert categorical data to int ----------
-df = pd.read_csv("data.csv")
+df = pd.read_csv("../Data/tweets.csv")
 countries = df['country']
 cat = pd.Categorical(df['country'])
 country_code = pd.Series(cat.codes)
@@ -54,6 +52,7 @@ lr = LogisticRegression(multi_class='multinomial')
 lr.fit(X_train, Y_train)
 print("LR Bag-of-words score: " + str(lr.score(X_test, Y_test)))
 
+# SVC is slooooowwwww
 '''
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, train_size=0.1, random_state=0)
 X_train2, X_test, Y_train2, Y_test = train_test_split(X, Y, test_size=0.1, random_state=0)
@@ -76,6 +75,7 @@ gnb = MultinomialNB()
 gnb.fit(X_train, Y_train)
 print("MultinomialNB TF-IDF score: " + str(gnb.score(X_test, Y_test)))
 
+# SVC is slooooowwwww
 #svc = SVC()
 #svc.fit(X_train, Y_train)
 #print("SVC TF-IDF score: " + str(svc.score(X_test, Y_test)))
