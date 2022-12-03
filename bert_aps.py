@@ -257,8 +257,8 @@ print("Test accuracy:", score[1])
 
 #create a classification report on the model performance based on the test set
 y_pred = predict_class(X_test)
-y_pred = tf.keras.utils.to_categorical(y_pred, num_classes=num_classes)
-print(classification_report(y_test, y_pred))
+y_pred_categorical = tf.keras.utils.to_categorical(y_pred, num_classes=num_classes)
+print(classification_report(y_test, y_pred_categorical))
 
 #plot the values assumed by each monitored metric during training procedure. Compare training/validation curves
 metric_list = list(model_fit.history.keys())
@@ -277,6 +277,21 @@ for i in range(0, num_metrics):
 plt.show()
 
 #Confusion Matrix to be added
+# Convert predictions classes to one hot vectors 
+Y_pred_classes = np.argmax(Y_pred,axis = 1) 
+# Convert ground truth observations to one hot vectors
+Y_true = np.argmax(y_test,axis = 1) 
+# compute the confusion matrix
+confusion_mtx = confusion_matrix(Y_true, Y_pred_classes) 
+# plot the confusion matrix
+f,ax = plt.subplots(figsize=(8, 8))
+g = sns.heatmap(confusion_mtx, annot=True, xticklabels=countries, yticklabels=countries, linewidths=0.01,cmap="Greens",linecolor="gray", fmt= '.1f',ax=ax)
+g.set_yticklabels(g.get_yticklabels(), rotation = 0)
+
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Confusion Matrix")
+plt.show()
 
 ###########################################################
 ####### Still need to successfully save/load model ########
