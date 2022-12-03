@@ -21,5 +21,8 @@ Apostolos' Scondrianis Branch for ENSF544 Final Project #2
     b) Top 10 BERT Model -> 0.2 Dropout 5/20 Epochs/Patiences 3
        Test loss     : Test loss: 1.2485618591308594
        Test Accuracy : Test accuracy: 0.6129566431045532
+    c) Top 20 BERT Model -> 0.2 Dropout 7/20 Epochs/Patience 3
+       Test loss: 1.455275535583496
+       Test accuracy: 0.586527943611145
 4. LSTM Model on for classification of Tweets from each country
   
