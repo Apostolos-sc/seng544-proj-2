@@ -1,46 +1,30 @@
+#Necessary imports for our model
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import tensorflow as tf
 import tensorflow_hub as hub
 import tensorflow_text as text
+from tensorflow import keras
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics.pairwise import cosine_similarity
 import re
+import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import Counter
-import nltk
-import seaborn as sns
-from sklearn.metrics.pairwise import cosine_similarity
+from keras import backend as K
+
+
 #nltk.download('stopwords')
 # for Colab users: !pip install tensorflow_text
-from tensorflow.python.client import device_lib
 stop_words = stopwords.words('english')
 stopwords_dict = Counter(stop_words)
 
-
+#load the data
 df = pd.read_csv('data.csv')
-#df.head()
-
-plt.style.use('ggplot')
-
-#visualization of the # of tweets per country
-num_classes = len(df["country"].value_counts())
-colors = plt.cm.Dark2(np.linspace(0, 1, num_classes))
-iter_color = iter(colors)
-
-df["country"].value_counts().plot.barh(title="Tweet for each country (n, %)", 
-                                       ylabel="Countries", 
-                                       color=colors,figsize=(29,29))
-
-for i, v in enumerate(df["country"].value_counts()):
-    c = next(iter_color)
-    plt.text(v, i,
-             " "+str(v)+", "+str(round(v*100/df.shape[0], 2))+ "%",
-             color=c,
-             va='center',
-             fontweight='bold')
-plt.show()
 
 ##########################
 ### Text Preprocessing ###
@@ -99,25 +83,49 @@ df.to_csv("testing.csv", sep='\t', encoding='utf-8')
 ### End Text Preprocessing ###
 ##############################
 
+#Select number of countries that we want our model to examine (Top in # of tweets)
+num_of_top_countries = 20
+df = df[df["country"].isin(df["country"].value_counts()[:num_of_top_countries].index.values)]
+
+plt.style.use('ggplot')
+
+#visualization of the # of tweets per country aftter text preprocessing
+num_classes = len(df["country"].value_counts())
+colors = plt.cm.Dark2(np.linspace(0, 1, num_classes))
+iter_color = iter(colors)
+
+df["country"].value_counts().plot.barh(title="Tweet for each country (n, %)", 
+                                       ylabel="Countries", 
+                                       color=colors,figsize=(29,29))
+
+for i, v in enumerate(df["country"].value_counts()):
+    c = next(iter_color)
+    plt.text(v, i,
+             " "+str(v)+", "+str(round(v*100/df.shape[0], 2))+ "%",
+             color=c,
+             va='center',
+             fontweight='bold')
+plt.show()
+
+
 #map countries to integers
 #create dictionary
 country_dict = dict()
 countries = df["country"].unique()
 for i in range(0, num_classes):
     country_dict[countries[i]] = i
-#print(country_dict)
+
 df["Labels"] = df["country"].map(country_dict)
 
-#drop country, we are interested in the label only.
+#drop country, we are interested in the numerical mapping of the label only.
 df = df.drop(["country"], axis=1)
 
-
-
+#Create training, validation, test set
 y = tf.keras.utils.to_categorical(df["Labels"][:10000].values, num_classes=num_classes)
 X_train, X_test, y_train, y_test = train_test_split(df["text"][:10000], y, test_size=0.2, random_state=0)
 X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.10, random_state=0)
 
-print(X_test)
+#BERT layers
 preprocessor = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-preprocess/2")
 encoder = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder-cmlm/multilingual-base/1")
 #preprocessor = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3")
@@ -136,9 +144,8 @@ def get_embeddings(sentences):
 
 #print(get_embeddings(["testing life forces in mind"]))
 
-#printing semantic textual similarity
 
-
+#Not necessary
 
 def plot_similarity(features, labels):
     #Plot a similarity matrix of the embeddings.
@@ -161,11 +168,11 @@ reviews = ["cost of love is high",
 
 plot_similarity(get_embeddings(reviews), reviews)
 
+#not necessary ends.
+
 #Create and train a classification model
 
-from keras import backend as K
-
-#Definition of function that will be used to calculate metrics
+#Definition of functions that will be used to calculate metrics
 def balanced_recall(y_true, y_pred):
     #This function calculates the balanced recall metric
     #recall = TP / (TP + FN)
@@ -203,63 +210,29 @@ def balanced_f1_score(y_true, y_pred):
     recall = balanced_recall(y_true, y_pred)
     return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
 
+#define prediction function, predict class of input tweets
+#Arguments : tweets (list of strings)
+#Returns   : class (list of int where the tweets belong)
+def predict_class(tweets):
+  #pick the class for which the highest probability the tweet originated from
+  return [np.argmax(pred) for pred in model.predict(reviews)]
+
 
 #Defining a model as the preprocessor and encoder layers
 #Follows a dropout and a dense layer with softmax activation function
-
 i = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
 x = preprocessor(i)
 x = encoder(x)
-x = tf.keras.layers.Dropout(0.5, name="dropout")(x['pooled_output'])
+x = tf.keras.layers.Dropout(0.2, name="dropout")(x['pooled_output'])
 x = tf.keras.layers.Dense(num_classes, activation='softmax', name="output")(x)
 
+#set the model's layers
 model = tf.keras.Model(i, x)
 
-#if our model doesn't improve for 3 epochs -> patience = 3 we stop the training
-#we restore the weights from the epoch where the validation loss showed the best value
+#number of seasons the model should run for
+n_epochs = 20
 
-n_epochs = 1
-#Definition of function that will be used to calculate metrics
-def balanced_recall(y_true, y_pred):
-    #This function calculates the balanced recall metric
-    #recall = TP / (TP + FN)
-
-    recall_by_class = 0
-    # iterate over each predicted class to get class-specific metric
-    for i in range(y_pred.shape[1]):
-        y_pred_class = y_pred[:, i]
-        y_true_class = y_true[:, i]
-        true_positives = K.sum(K.round(K.clip(y_true_class * y_pred_class, 0, 1)))
-        possible_positives = K.sum(K.round(K.clip(y_true_class, 0, 1)))
-        recall = true_positives / (possible_positives + K.epsilon())
-        recall_by_class = recall_by_class + recall
-    return recall_by_class / y_pred.shape[1]
-
-def balanced_precision(y_true, y_pred):
-    #This function calculates the balanced precision metric
-    #precision = TP / (TP + FP)
-
-    precision_by_class = 0
-    # iterate over each predicted class to get class-specific metric
-    for i in range(y_pred.shape[1]):
-        y_pred_class = y_pred[:, i]
-        y_true_class = y_true[:, i]
-        true_positives = K.sum(K.round(K.clip(y_true_class * y_pred_class, 0, 1)))
-        predicted_positives = K.sum(K.round(K.clip(y_pred_class, 0, 1)))
-        precision = true_positives / (predicted_positives + K.epsilon())
-        precision_by_class = precision_by_class + precision
-    # return average balanced metric for each class
-    return precision_by_class / y_pred.shape[1]
-
-def balanced_f1_score(y_true, y_pred):
-    #This function calculates the F1 score metric
-    precision = balanced_precision(y_true, y_pred)
-    recall = balanced_recall(y_true, y_pred)
-    return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
-
-
-#Defining a model as the preprocessor and encoder layers
-#Follows a dropout and a dense layer with softmax activation function
+#List of metrics to be calculated by the model
 METRICS = [
       tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
       balanced_recall,
@@ -267,38 +240,26 @@ METRICS = [
       balanced_f1_score
 ]
 
-earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor = "val_loss", 
-                                                      patience = 3,
-                                                      restore_best_weights = True)
-model.compile(optimizer = "adam",
-              loss = "categorical_crossentropy",
-              metrics = METRICS)
+#if our model doesn't improve for 3 epochs -> patience = 3 we stop the training
+#we restore the weights from the epoch where the validation loss showed the best value
+earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor = "val_loss", patience = 3, restore_best_weights = True)
 
-model_fit = model.fit(X_train, 
-                      y_train, 
-                      epochs = n_epochs,
-                      validation_data = (X_valid, y_valid),
-                      callbacks = [earlystop_callback])
-#predict_class(reviews)
-from sklearn.metrics import classification_report
+#compile the model with the parameters we selected
+model.compile(optimizer = "adam", loss = "categorical_crossentropy", metrics = METRICS)
 
-def predict_class(reviews):
-  '''predict class of input text
-  Args:
-    - reviews (list of strings)
-  Output:
-    - class (list of int)
-  '''
-  return [np.argmax(pred) for pred in model.predict(reviews)]
+#fit the model using our train and validation data, callback as well.
+model_fit = model.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_valid, y_valid), callbacks = [earlystop_callback])
 
+#evaluate the mode on the test set
 score = model.evaluate(X_test, y_test, verbose=0)
 print("Test loss:", score[0])
 print("Test accuracy:", score[1])
+
+#create a classification report on the model performance based on the test set
 y_pred = predict_class(X_test)
 y_pred = tf.keras.utils.to_categorical(y_pred, num_classes=num_classes)
 print(classification_report(y_test, y_pred))
-from tensorflow import keras
-# load model
+
 #plot the values assumed by each monitored metric during training procedure. Compare training/validation curves
 metric_list = list(model_fit.history.keys())
 num_metrics = int(len(metric_list)/2)
@@ -314,7 +275,9 @@ for i in range(0, num_metrics):
     ax[i].set_title(metric_list[i].replace("_", " "),fontsize=20)
     ax[i].legend(loc="lower left")
 plt.show()
-model.save("text_classifier_v1")
-##########################################################
-####### Still need to successfully save/load mode ########
-##########################################################
+
+#Confusion Matrix to be added
+
+###########################################################
+####### Still need to successfully save/load model ########
+###########################################################
