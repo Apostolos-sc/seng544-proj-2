@@ -22,9 +22,9 @@ def preprocessing(text_column):
     df[text_column] = df[text_column].map(lambda name: re.sub("@([a-zA-Z0-9_]{1,50})", '', name))
 
     # Remove repeated instances of characters
-    repeat_pattern = re.compile(r'(\w)\1*') #compile the pattern we are looking for
-    match_substitution = r'\1' #substituion pattern
-    df[text_column] = df[text_column].map(lambda name: re.sub(repeat_pattern, match_substitution, name))
+    #repeat_pattern = re.compile(r'(\w)\1*') #compile the pattern we are looking for
+    #match_substitution = r'\1' #substituion pattern
+    #df[text_column] = df[text_column].map(lambda name: re.sub(repeat_pattern, match_substitution, name))
 
     # Remove of digits with regex - we do this here because it is possible to have numbers in tags and urls replace with space.
     df[text_column] = df[text_column].map(lambda name: re.sub(r'[0-9]', ' ', name))
@@ -72,13 +72,13 @@ def preprocessing(text_column):
     df.dropna(axis=0, inplace=True)
 
     # Export results to csv
-    df.to_csv("cleaned_userdata.csv")
+    df.to_csv("cleaned_tweets.csv")
 
-df = pd.read_csv("user_data.csv")
-text = 'description'
+df = pd.read_csv("tweets.csv")
+text = 'text'
 df[text] = df[text].apply(lambda x: str(x))
 preprocessing(text)
 
-text = 'username'
-df[text] = df[text].apply(lambda x: str(x))
-preprocessing(text)
+#text = 'username'
+#df[text] = df[text].apply(lambda x: str(x))
+#preprocessing(text)

@@ -13,6 +13,10 @@ from keras.optimizers import SGD
 import random
 import tkinter
 from tkinter import *
+import pandas as pd
+
+# Import data
+data = pd.read_csv("../Data/cleaned_tweets.csv")
 
 # Initialize
 lemmatizer = WordNetLemmatizer()
@@ -39,10 +43,12 @@ for intent in intents['intents']:
             classes.append(intent['tag'])
 
 # Preprocess words
-words = [lemmatizer.lemmatize(w.lower()) for w in words if w not in ignore_words]
+words = data['text']
+words = [lemmatizer.lemmatize(w.lower()) for w in words]# if w not in ignore_words]
 words = sorted(list(set(words)))
 
 # Sort classification of words
+classes = data['country']
 classes = sorted(list(set(classes)))
 
 print(len(documents), "documents")

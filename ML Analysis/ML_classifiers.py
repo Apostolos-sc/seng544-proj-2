@@ -7,31 +7,26 @@ from sklearn.linear_model import LogisticRegression
 import pandas as pd
 import nltk
 from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
 
 # ---------- Import data and convert categorical data to int ----------
 df = pd.read_csv("../Data/cleaned_userdata.csv")
-countries = df['country']
-cat = pd.Categorical(df['country'])
-country_code = pd.Series(cat.codes)
 
-print(df['country'].tail(10))
-print(country_code.tail(10))
+# Remove countries with less than 2 instances in the dataset (for stratified train/test splitting)
+df = df.groupby('country').filter(lambda x: len(x) > 1)
 
+print(len(df['country'].unique().tolist()))
+
+# Ensure usernames and descriptions are in string format for parsing
 df['description'] = df['description'].apply(lambda x: str(x))
-print(df['description'])
+df['username'] = df['username'].apply(lambda x: str(x))
 
-# Integer encoding
+# Integer encoding for countries
 ienc = LabelEncoder().fit_transform(df['country'])
 Y = ienc
-#print(ienc)
 
-# One hot encoding
-ohe = OneHotEncoder(sparse=False)
-ienc = ienc.reshape(len(ienc), 1)
-#Y = ohe.fit_transform(ienc)
-#print(Y)
+corpus = df['username']
 
+'''
 # Tokenize & lemmatize
 print("Lemmatizing...")
 w_tokenizer = nltk.tokenize.WhitespaceTokenizer()
@@ -41,61 +36,82 @@ def lemmatize_text(text):
     return [lemmatizer.lemmatize(w) for w in w_tokenizer.tokenize(text)]
 
 df2 = pd.DataFrame()
-corpus = df['username'].apply(lemmatize_text)
+corpus = df['description'].apply(lemmatize_text)
 
 # Detokenize - this is probably silly but it works
 def detokenize(text):
     return ' '.join(text)
 
 corpus = corpus.apply(detokenize)
-print(corpus.head(5))
+#print(corpus.head(5))
+'''
 
-# ---------- Bag-of-words ----------
-print("Vectorizing...")
-vectorizer = CountVectorizer()#strip_accents='ascii', stop_words='english', min_df=(1.0/corpus.count()))
-X = vectorizer.fit_transform(corpus)
+gnb_bow_scores = list()
+gnb_idf_scores = list()
+lr_bow_scores = list()
+lr_idf_scores = list()
+svc_bow_scores = list()
+svc_idf_scores = list()
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, stratify=Y, random_state=0)
+for n in range(0, 99+1):
 
-print("Fitting MultinomialNB...")
-gnb = MultinomialNB()
-gnb.fit(X_train, Y_train)
-#print(gnb.class_count_)
-print("MultinomialNB Bag-of-words score: " + str(gnb.score(X_test, Y_test)))
+    # ---------- Bag-of-words ----------
+    print("Vectorizing...")
+    vectorizer = CountVectorizer()#strip_accents='ascii', stop_words='english', min_df=(1.0/corpus.count()))
+    X = vectorizer.fit_transform(corpus)
 
-print("Fitting Logistic Regression...")
-lr = LogisticRegression(multi_class='multinomial')
-lr.fit(X_train, Y_train)
-print("LR Bag-of-words score: " + str(lr.score(X_test, Y_test)))
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, stratify=Y, random_state=n)
 
-# SVC is slooooowwwww
-#X_train, X_test, Y_train, Y_test = train_test_split(X, Y, train_size=0.1, random_state=0)
-#X_train2, X_test, Y_train2, Y_test = train_test_split(X, Y, test_size=0.1, random_state=0)
+    #print("Fitting MultinomialNB...")
+    gnb = MultinomialNB()
+    gnb.fit(X_train, Y_train)
+    score = gnb.score(X_test, Y_test)
+    gnb_bow_scores.append(score)
 
-print("Fitting SVC")
-svc = SVC(kernel='linear', gamma='auto')
-svc.fit(X_train, Y_train)
-print("SVC Bag-of-words score: " + str(svc.score(X_test, Y_test)))
+    #print("Fitting Logistic Regression...")
+    lr = LogisticRegression(multi_class='multinomial')
+    lr.fit(X_train, Y_train)
+    score = lr.score(X_test, Y_test)
+    lr_bow_scores.append(score)
 
-# ---------- TF-IDF ----------
+    #print("Fitting SVC")
+    svc = SVC(kernel='linear', gamma='auto')
+    svc.fit(X_train, Y_train)
+    score = svc.score(X_test, Y_test)
+    svc_bow_scores.append(score)
 
-vectorizer = TfidfVectorizer()#strip_accents='ascii', stop_words='english', min_df=(1.0/corpus.count()))
-X = vectorizer.fit_transform(corpus)
+    # ---------- TF-IDF ----------
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, stratify=Y, random_state=0)
+    vectorizer = TfidfVectorizer()#strip_accents='ascii', stop_words='english', min_df=(1.0/corpus.count()))
+    X = vectorizer.fit_transform(corpus)
 
-print("Fitting MultinomialNB...")
-gnb = MultinomialNB()
-gnb.fit(X_train, Y_train)
-print("MultinomialNB TF-IDF score: " + str(gnb.score(X_test, Y_test)))
-print(gnb.predict(X_test))
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, stratify=Y, random_state=n)
 
-print("Fitting Logistic Regression...")
-lr = LogisticRegression(multi_class='multinomial')
-lr.fit(X_train, Y_train)
-print("LR TF-IDF: " + str(lr.score(X_test, Y_test)))
+    #print("Fitting MultinomialNB...")
+    gnb = MultinomialNB()
+    gnb.fit(X_train, Y_train)
+    score = gnb.score(X_test, Y_test)
+    gnb_idf_scores.append(score)
 
-# SVC is slooooowwwww
-svc = SVC()
-svc.fit(X_train, Y_train)
-print("SVC TF-IDF score: " + str(svc.score(X_test, Y_test)))
+    #print("Fitting Logistic Regression...")
+    lr = LogisticRegression(multi_class='multinomial')
+    lr.fit(X_train, Y_train)
+    score = lr.score(X_test, Y_test)
+    lr_idf_scores.append(score)
+
+    # SVC is slooooowwwww
+    svc = SVC()
+    svc.fit(X_train, Y_train)
+    score = svc.score(X_test, Y_test)
+    svc_idf_scores.append(score)
+
+def Average(list):
+    return (sum(list) / len(list))
+
+print("Multinomal Naive Bayes BoW: " + str(Average(gnb_bow_scores)))
+print("Support Vector Classification BoW: " + str(Average(svc_bow_scores)))
+print("Logistic Regression BoW: " + str(Average(lr_bow_scores)))
+
+print("Multinomal Naive Bayes TF-IDF: " + str(Average(gnb_idf_scores)))
+print("Support Vector Classification TF-IDF: " + str(Average(svc_idf_scores)))
+print("Logistic Regression TF-IDF: " + str(Average(lr_idf_scores)))
