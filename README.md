@@ -16,27 +16,33 @@ Apostolos' Scondrianis Branch for ENSF544 Final Project #2
   - Confusion Matrices for top 10 countries
   - Model classification report
     - a) Top 10 BERT Model -> 0.5 Dropout  9/20 Epochs/Patience 3
-        Loss     : 1.247810959815979
-        Accuracy : 0.6123721599578857
+        - Loss     : 1.247810959815979
+        - Accuracy : 0.6123721599578857
     - b) Top 10 BERT Model -> 0.2 Dropout 5/20 Epochs/Patiences 3
-        Loss     : Test loss: 1.2485618591308594
-        Accuracy : Test accuracy: 0.6129566431045532
+        - Loss     : Test loss: 1.2485618591308594
+        - Accuracy : Test accuracy: 0.6129566431045532
     - c) Top 20 BERT Model -> 0.2 Dropout  7/20 Epochs/Patience 3
-        Loss     : 1.455275535583496
-        Accuracy : 0.586527943611145
+        - Loss     : 1.455275535583496
+        - Accuracy : 0.586527943611145
     - d) Top 20 BERT Model -> 0.5 Dropout 10/20 Epochs/Patience 3
-        Loss     : 1.4809858798980713
-        Accuracy : 0.5778112411499023
+        - Loss     : 1.4809858798980713
+        - Accuracy : 0.5778112411499023
+    - e) BERT Model with all the data -> 0.5 Dropout 
+        - Test loss     : 1.8358759880065918
+        - Test accuracy : 0.538648247718811 
 4. LSTM Model on for classification of Tweets from each country
     - a) Top 10 LSTM Model -> 0.5 Dropout 4/20 Epochs/Patience 3
-        Loss     : 1.499
-        Accuracy : 0.575
+        - Loss     : 1.499
+        - Accuracy : 0.575
     - b) Top 10 LSTM Model -> 0.2 Dropout 4/20 Epochs/Patience 3
-        Loss     : 1.494
-        Accuracy : 0.574
+        - Loss     : 1.494
+        - Accuracy : 0.574
     - c) Top 20 LSTM Model -> 0.2 Dropout 4/20 Epochs/Patience 3
-        Loss     : 1.766
-        Accuracy : 0.531
+        - Loss     : 1.766
+        - Accuracy : 0.531
     - d) Top 20 LSTM Model -> 0.5 Dropout 4/20 Epochs/Patience 3
-        Loss     : 1.757
-        Accuracy : 0.539
+        - Loss     : 1.757
+        - Accuracy : 0.539
+    - e) LSTM Model With all the data -> 0.5 Dropout 11/20 Epochs/Patience 3
+        - Loss     : 2.228
+        - Accuracy : 0.502
