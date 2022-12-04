@@ -4,7 +4,6 @@ import os
 import time
 from keras.models import Sequential
 
-
 path_to_file = tf.keras.utils.get_file('shakespeare.txt', 'https://storage.googleapis.com/download.tensorflow.org/data/shakespeare.txt')
 
 # Read the file
@@ -125,7 +124,7 @@ checkpoint_dir = './training_checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
 
 checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_prefix, save_weights_only=True)
-epochs = 3
+epochs = 30
 history = model.fit(dataset, epochs=epochs, callbacks=[checkpoint_callback])
 
 class OneStep(tf.keras.Model):
