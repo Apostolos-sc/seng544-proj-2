@@ -137,13 +137,10 @@ df["Labels"] = df["country"].map(country_dict)
 df = df.drop(["country"], axis=1)
 
 X = df["text"]
-Y = df["Labels"]
-le = LabelEncoder()
-Y = le.fit_transform(Y)
-Y = Y.reshape(-1,1)
+y = tf.keras.utils.to_categorical(df["Labels"].values, num_classes=num_classes)
 
-X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.15, random_state=0)
-
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2, random_state=0, stratify=y)
+X_train,X_valid,y_train,y_valid = train_test_split(X_train, y_train,test_size=0.1, random_state=0, stratify=y_train)
 
 
 max_words = 1000
@@ -152,6 +149,9 @@ tok = Tokenizer(num_words=max_words)
 tok.fit_on_texts(X_train)
 sequences = tok.texts_to_sequences(X_train)
 sequences_matrix = tf.keras.preprocessing.sequence.pad_sequences(sequences,maxlen=max_len)
+tok.fit_on_texts(X_valid)
+sequences_valid = tok.texts_to_sequences(X_valid)
+sequences_matrix_valid = tf.keras.preprocessing.sequence.pad_sequences(sequences_valid ,maxlen=max_len)
 
 
 
@@ -162,21 +162,73 @@ def RNN():
     layer = Dense(256,name='FC1')(layer)
     layer = Activation('relu')(layer)
     layer = Dropout(0.2)(layer)
-    layer = Dense(1,name='out_layer')(layer)
+    layer = Dense(num_classes,name='out_layer')(layer)
     layer = Activation('softmax')(layer)
     model = Model(inputs=inputs,outputs=layer)
     return model
 
+#Create and train a classification model
 
+#Definition of functions that will be used to calculate metrics
+def balanced_recall(y_true, y_pred):
+    #This function calculates the balanced recall metric
+    #recall = TP / (TP + FN)
+
+    recall_by_class = 0
+    # iterate over each predicted class to get class-specific metric
+    for i in range(y_pred.shape[1]):
+        y_pred_class = y_pred[:, i]
+        y_true_class = y_true[:, i]
+        true_positives = K.sum(K.round(K.clip(y_true_class * y_pred_class, 0, 1)))
+        possible_positives = K.sum(K.round(K.clip(y_true_class, 0, 1)))
+        recall = true_positives / (possible_positives + K.epsilon())
+        recall_by_class = recall_by_class + recall
+    return recall_by_class / y_pred.shape[1]
+
+def balanced_precision(y_true, y_pred):
+    #This function calculates the balanced precision metric
+    #precision = TP / (TP + FP)
+
+    precision_by_class = 0
+    # iterate over each predicted class to get class-specific metric
+    for i in range(y_pred.shape[1]):
+        y_pred_class = y_pred[:, i]
+        y_true_class = y_true[:, i]
+        true_positives = K.sum(K.round(K.clip(y_true_class * y_pred_class, 0, 1)))
+        predicted_positives = K.sum(K.round(K.clip(y_pred_class, 0, 1)))
+        precision = true_positives / (predicted_positives + K.epsilon())
+        precision_by_class = precision_by_class + precision
+    # return average balanced metric for each class
+    return precision_by_class / y_pred.shape[1]
+
+def balanced_f1_score(y_true, y_pred):
+    #This function calculates the F1 score metric
+    precision = balanced_precision(y_true, y_pred)
+    recall = balanced_recall(y_true, y_pred)
+    return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
+
+#define prediction function, predict class of input tweets
+#Arguments : tweets (list of strings)
+#Returns   : class (list of int where the tweets belong)
+def predict_class(tweets):
+  #pick the class for which the highest probability the tweet originated from
+  return [np.argmax(pred) for pred in model.predict(tweets)]
+
+METRICS = [
+      tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
+      balanced_recall,
+      balanced_precision,
+      balanced_f1_score
+]
 
 model = RNN()
 model.summary()
-model.compile(loss='categorical_crossentropy',optimizer="adam",metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=METRICS)
+earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor = "val_loss", patience = 3, restore_best_weights = True)
 
 
-
-model.fit(sequences_matrix,Y_train,batch_size=32,epochs=10,
-          validation_split=0.2,callbacks=[EarlyStopping(monitor='val_loss',min_delta=0.0001)])
+model_fit = model.fit(sequences_matrix,y_train,batch_size=32,epochs=10,
+          validation_data = (sequences_matrix_valid, y_valid), callbacks=[earlystop_callback])
 
 
 
@@ -185,6 +237,47 @@ test_sequences_matrix = tf.keras.preprocessing.sequence.pad_sequences(test_seque
 
 
 
-accr = model.evaluate(test_sequences_matrix,Y_test)
+accr = model.evaluate(test_sequences_matrix,y_test)
 
 print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(accr[0],accr[1]))
+
+y_pred = predict_class(test_sequences_matrix)
+y_pred_categorical = tf.keras.utils.to_categorical(y_pred, num_classes=num_classes)
+print(classification_report(y_test, y_pred_categorical))
+
+#plot the values assumed by each monitored metric during training procedure. Compare training/validation curves
+metric_list = list(model_fit.history.keys())
+num_metrics = int(len(metric_list)/2)
+x = list(range(1, len(model_fit.history['loss'])+1))
+
+
+fig, ax = plt.subplots(nrows=1, ncols=num_metrics, figsize=(30, 5))
+
+for i in range(0, num_metrics):
+    ax[i].plot(x, model_fit.history[metric_list[i]], marker="o", label=metric_list[i].replace("_", " "))
+    ax[i].plot(x, model_fit.history[metric_list[i+num_metrics]], marker="o", label=metric_list[i+num_metrics].replace("_", " "))
+    ax[i].set_xlabel("epochs",fontsize=14)
+    ax[i].set_title(metric_list[i].replace("_", " "),fontsize=20)
+    ax[i].legend(loc="lower left")
+plt.show()
+
+
+#Confusion Matrix to be added
+# Convert predictions classes to one hot vectors 
+# Predict the values from the validation dataset
+Y_pred = model.predict(test_sequences_matrix)
+# Convert predictions classes to one hot vectors 
+Y_pred_classes = np.argmax(Y_pred,axis = 1) 
+# Convert validation observations to one hot vectors
+Y_true = np.argmax(y_test,axis = 1) 
+# compute the confusion matrix
+confusion_mtx = confusion_matrix(Y_true, Y_pred_classes) 
+# plot the confusion matrix
+f,ax = plt.subplots(figsize=(8, 8))
+g = sns.heatmap(confusion_mtx, annot=True, xticklabels=countries, yticklabels=countries, linewidths=0.01,cmap="Greens",linecolor="gray", fmt= '.1f',ax=ax)
+g.set_yticklabels(g.get_yticklabels(), rotation = 0)
+
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Confusion Matrix")
+plt.show()
