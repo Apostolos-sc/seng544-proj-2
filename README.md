@@ -15,14 +15,17 @@ Apostolos' Scondrianis Branch for ENSF544 Final Project #2
   - Visualizations of the BERT model
   - Confusion Matrices for top 10 countries
   - Model classification report
-  - a) Top 10 BERT Model -> 0.5 Dropout 9/20 Epochs/Patience 3
+    - a) Top 10 BERT Model -> 0.5 Dropout 9/20 Epochs/Patience 3
        Test loss     : 1.247810959815979
        Test accuracy : 0.6123721599578857
-    b) Top 10 BERT Model -> 0.2 Dropout 5/20 Epochs/Patiences 3
+    - b) Top 10 BERT Model -> 0.2 Dropout 5/20 Epochs/Patiences 3
        Test loss     : Test loss: 1.2485618591308594
        Test Accuracy : Test accuracy: 0.6129566431045532
-    c) Top 20 BERT Model -> 0.2 Dropout 7/20 Epochs/Patience 3
+    - c) Top 20 BERT Model -> 0.2 Dropout 7/20 Epochs/Patience 3
        Test loss: 1.455275535583496
        Test accuracy: 0.586527943611145
+    - d) Top 20 BERT Model -> 0.5  Dropout 10/20 Epochs/Patience 3
+       Test loss: 1.4809858798980713
+       Test accuracy: 0.5778112411499023
 4. LSTM Model on for classification of Tweets from each country
   
