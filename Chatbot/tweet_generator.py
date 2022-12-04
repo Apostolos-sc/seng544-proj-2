@@ -1,3 +1,7 @@
+####################################################################
+# RNN text generator model trained using the Twitter data we mined #
+####################################################################
+
 import tensorflow as tf
 import numpy as np
 import pandas as pd
