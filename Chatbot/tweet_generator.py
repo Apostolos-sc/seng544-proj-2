@@ -1,11 +1,11 @@
-####################################################################
-# RNN text generator model trained using the Twitter data we mined #
-####################################################################
+########################################################################
+# RNN text generator model trained using the Twitter data we mined     #
+# Reference: https://www.tensorflow.org/text/tutorials/text_generation #
+########################################################################
 
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import os
 import time
 from keras.models import Sequential
 
