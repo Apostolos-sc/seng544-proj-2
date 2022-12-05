@@ -9,24 +9,23 @@ import nltk
 from sklearn.preprocessing import LabelEncoder
 
 # ---------- Import data and convert categorical data to int ----------
-df = pd.read_csv("../Data/cleaned_userdata.csv")
+df = pd.read_csv("../Data/cleaned_tweets.csv")
 
 # Remove countries with less than 2 instances in the dataset (for stratified train/test splitting)
 df = df.groupby('country').filter(lambda x: len(x) > 1)
-
 print(len(df['country'].unique().tolist()))
 
-# Ensure usernames and descriptions are in string format for parsing
-df['description'] = df['description'].apply(lambda x: str(x))
-df['username'] = df['username'].apply(lambda x: str(x))
+# Ensure usernames, descriptions, and text are in string format for parsing
+#df['description'] = df['description'].apply(lambda x: str(x))
+#df['username'] = df['username'].apply(lambda x: str(x))
+df['text'] = df['text'].apply(lambda x: str(x))
 
 # Integer encoding for countries
 ienc = LabelEncoder().fit_transform(df['country'])
 Y = ienc
 
-corpus = df['username']
+corpus = df['text']
 
-'''
 # Tokenize & lemmatize
 print("Lemmatizing...")
 w_tokenizer = nltk.tokenize.WhitespaceTokenizer()
@@ -36,15 +35,13 @@ def lemmatize_text(text):
     return [lemmatizer.lemmatize(w) for w in w_tokenizer.tokenize(text)]
 
 df2 = pd.DataFrame()
-corpus = df['description'].apply(lemmatize_text)
+corpus = df['text'].apply(lemmatize_text)
 
 # Detokenize - this is probably silly but it works
 def detokenize(text):
     return ' '.join(text)
 
 corpus = corpus.apply(detokenize)
-#print(corpus.head(5))
-'''
 
 gnb_bow_scores = list()
 gnb_idf_scores = list()
@@ -53,7 +50,9 @@ lr_idf_scores = list()
 svc_bow_scores = list()
 svc_idf_scores = list()
 
-for n in range(0, 99+1):
+num_states = 1
+
+for n in range(0, num_states+1):
 
     # ---------- Bag-of-words ----------
     print("Vectorizing...")
@@ -75,10 +74,10 @@ for n in range(0, 99+1):
     lr_bow_scores.append(score)
 
     #print("Fitting SVC")
-    svc = SVC(kernel='linear', gamma='auto')
-    svc.fit(X_train, Y_train)
-    score = svc.score(X_test, Y_test)
-    svc_bow_scores.append(score)
+    #svc = SVC(kernel='linear', gamma='auto')
+    #svc.fit(X_train, Y_train)
+    #score = svc.score(X_test, Y_test)
+    #svc_bow_scores.append(score)
 
     # ---------- TF-IDF ----------
 
@@ -100,10 +99,10 @@ for n in range(0, 99+1):
     lr_idf_scores.append(score)
 
     # SVC is slooooowwwww
-    svc = SVC()
-    svc.fit(X_train, Y_train)
-    score = svc.score(X_test, Y_test)
-    svc_idf_scores.append(score)
+    #svc = SVC()
+    #svc.fit(X_train, Y_train)
+    #score = svc.score(X_test, Y_test)
+    #svc_idf_scores.append(score)
 
 def Average(list):
     return (sum(list) / len(list))

@@ -1,16 +1,16 @@
-####################################################################
-# RNN text generator model trained using the Twitter data we mined #
-####################################################################
+########################################################################
+# RNN text generator model trained using the Twitter data we mined     #
+# Reference: https://www.tensorflow.org/text/tutorials/text_generation #
+########################################################################
 
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import os
 import time
 from keras.models import Sequential
 
 # Read data from csv
-data = pd.read_csv("../Data/tweets.csv")
+data = pd.read_csv("../Data/chatbot_tweets.csv")
 
 # Restrict data to tweets from the USA
 data = data[data['country'] == 'USA']
@@ -38,7 +38,7 @@ def text_from_ids(ids):
 all_ids = ids_from_chars(tf.strings.unicode_split(text, 'UTF-8'))
 ids_dataset = tf.data.Dataset.from_tensor_slices(all_ids)
 
-seq_length = 100
+seq_length = 280
 sequences = ids_dataset.batch(seq_length+1, drop_remainder=True)
 
 def split_input_target(sequence):
@@ -48,7 +48,7 @@ def split_input_target(sequence):
 
 dataset = sequences.map(split_input_target)
 
-batch_size = 64
+batch_size = 32
 buffer_size = 1000
 
 dataset = (dataset.shuffle(buffer_size).batch(batch_size, drop_remainder=True).prefetch(tf.data.experimental.AUTOTUNE))
@@ -95,7 +95,7 @@ print("Next Char Predictions:\n", text_from_ids(sampled_indices).numpy())
 loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
 model.compile(optimizer='adam', loss=loss)
 
-epochs = 10
+epochs = 20
 history = model.fit(dataset, epochs=epochs)
 
 class OneStep(tf.keras.Model):
